@@ -1,9 +1,6 @@
 import dotenv from "dotenv";
 import connectDB from "./db/dbConnection.js";
-import express from "express";
-
-const app = express()
-const port = process.env.PORT
+import { app } from "./app.js";
 
 dotenv.config({
   path: "./env",
@@ -12,13 +9,13 @@ dotenv.config({
 //database connection function call and server setup
 connectDB()
   .then(() => {
-    app.on("error", (error) => {
-      console.log("ERROR : ", error);
-      throw error
-    });
+    // app.on("error", (error) => {
+    //   console.log("ERROR : ", error);
+    //   throw error
+    // });
 
-    app.listen(port, () => {
-      console.log(`Server started at port http://localhost:${port}`);
+    app.listen(process.env.PORT, () => {
+      console.log(`Server started at port http://localhost:${process.env.PORT}`);
     });
   })
   .catch((error) => {
