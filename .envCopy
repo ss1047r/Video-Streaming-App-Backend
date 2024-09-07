@@ -1,5 +1,5 @@
 PORT=3000
-MONGODB_URI=mmongodb+srv://ss1047r:password@cluster0.f5q08wk.mongodb.net
+MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.fbmpa.mongodb.net
 CORS_ORIGIN=*
 ACCESS_TOKEN_SECRET=
 ACCESS_TOKEN_EXPIRY=1d
