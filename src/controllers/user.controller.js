@@ -17,10 +17,10 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   if (!emailRegex.test(email)) {
-    throw new ApiError(405, "Invalid email format");
+    throw new ApiError(501, "Invalid email format");
   }
 
-  const userExist = await User.findone({
+  const userExist = await User.findOne({
     $or: [{ username }, { email }],
   });
 
@@ -34,10 +34,19 @@ const registerUser = asyncHandler(async (req, res) => {
   }
 
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
 
   if (!avatarLocalPath) {
     throw new ApiError("Avatar is required");
+  }
+
+  let coverImageLocalPath;
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage.length > 0
+  ) {
+    coverImageLocalPath = req.files.coverImage[0].path;
   }
 
   const avatar = await uploadOnCloudinary(avatarLocalPath);
@@ -47,27 +56,29 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(400, "Avatar file is required");
   }
 
-  const user = await User.create({
-    fullName,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
-    email,
-    password,
-    username: username.toLowerCase(),
-  });
+  try {
+    // Create the user
+    const user = await User.create({
+      fullName,
+      avatar: avatar.url,
+      coverImage: coverImage?.url || "",
+      email,
+      password,
+      username: username.toLowerCase(),
+    });
 
-  const createdUser = await user.findById(user._id).select(
-    "-password -refreshToken"
-  )
+    // Directly use the created user
+    const createdUser = user;
 
-  if (!createdUser) {
-    throw new ApiError(500, "Internal Server Error")
+    // Send response
+    return res
+      .status(201)
+      .json(new ApiResponse(200, createdUser, "User registered successfully"));
+  } catch (error) {
+    // Handle errors from the creation process
+    console.error("Error creating user:", error);
+    throw new ApiError(500, "Internal Server Error");
   }
-
-  return res.status(201).json(
-    new ApiResponse(200, createdUser, "User registered successfully")
-  )
-
 });
 
 export { registerUser };
