@@ -20,64 +20,63 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new ApiError(501, "Invalid email format");
   }
 
-  const userExist = await User.findOne({
-    $or: [{ username }, { email }],
-  });
-
-  if (userExist) {
-    if (userExist.username === "username") {
-      throw new ApiError(409, "Username already exists");
-    }
-    if (userExist.email === "email") {
-      throw new ApiError(409, "Email already exists");
-    }
-  }
-
-  const avatarLocalPath = req.files?.avatar[0]?.path;
-  // const coverImageLocalPath = req.files?.coverImage[0]?.path;
-
-  if (!avatarLocalPath) {
-    throw new ApiError("Avatar is required");
-  }
-
-  let coverImageLocalPath;
-  if (
-    req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage.length > 0
-  ) {
-    coverImageLocalPath = req.files.coverImage[0].path;
-  }
-
-  const avatar = await uploadOnCloudinary(avatarLocalPath);
-  const coverImage = await uploadOnCloudinary(coverImageLocalPath);
-
-  if (!avatar) {
-    throw new ApiError(400, "Avatar file is required");
-  }
-
   try {
+    // Check if the username or email already exists
+    const userExist = await User.findOne({
+      $or: [{ username: username.toLowerCase() }, { email }],
+    });
+
+    if (userExist) {
+      if (userExist.username === username.toLowerCase()) {
+        throw new ApiError(409, "Username already exists");
+      }
+      if (userExist.email === email) {
+        throw new ApiError(409, "Email already exists");
+      }
+    }
+
+    // Process the avatar file
+    const avatarLocalPath = req.files?.avatar?.[0]?.path;
+    if (!avatarLocalPath) {
+      throw new ApiError(400, "Avatar is required");
+    }
+
+    // Process the cover image file (if provided)
+    const coverImageLocalPath = req.files?.coverImage?.[0]?.path;
+    let avatar, coverImage;
+
+    try {
+      avatar = await uploadOnCloudinary(avatarLocalPath);
+      if (coverImageLocalPath) {
+        coverImage = await uploadOnCloudinary(coverImageLocalPath);
+      }
+    } catch (error) {
+      console.error("Error uploading images:", error);
+      throw new ApiError(500, "Error uploading images");
+    }
+
     // Create the user
     const user = await User.create({
       fullName,
-      avatar: avatar.url,
+      avatar: avatar?.url || "",
       coverImage: coverImage?.url || "",
       email,
       password,
       username: username.toLowerCase(),
     });
 
-    // Directly use the created user
-    const createdUser = user;
-
     // Send response
     return res
       .status(201)
-      .json(new ApiResponse(200, createdUser, "User registered successfully"));
+      .json(new ApiResponse(200, user, "User registered successfully"));
   } catch (error) {
-    // Handle errors from the creation process
-    console.error("Error creating user:", error);
-    throw new ApiError(500, "Internal Server Error");
+    console.error("Error:", error);
+    // If error is an instance of ApiError, it means it's a specific error
+    if (error instanceof ApiError) {
+      return res.status(error.statusCode).json({ message: error.message });
+    }
+    // Handle generic server errors
+    return res.status(500).json({ message: "Internal Server Error" });
   }
 });
 
