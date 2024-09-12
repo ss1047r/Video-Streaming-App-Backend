@@ -332,6 +332,22 @@ const updateCoverImage = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
+  const deletePreviousCoverImage = await user
+    .findByIdAndUpdate(
+      req.user?._id,
+      {
+        $set: {
+          coverImage: "",
+        },
+      },
+      { new: true }
+    )
+    .select("-password");
+
+  if (!deletePreviousCoverImage) {
+    throw new ApiError(400, "Cover image was not changed or could not be deleted");
+  }
+
   return res
     .status(200)
     .json(new ApiResponse(200, user, "Cover image updated successfully"));
