@@ -10,30 +10,28 @@ const getVideoComments = asyncHandler(async (req, res) => {
   const { page = 1, limit = 10 } = req.query;
 
   if (!videoId) {
-    throw new ApiError(400,"Video Id is required");
-    
+    throw new ApiError(400, "Video Id is required");
   }
 
   const pageNumber = parseInt(page, 10);
-  const pageSize = parseInt(limit, 10);
+  const pageSIZE = parseInt(limit, 10);
 
   if (isNaN(pageNumber) || pageNumber < 1) {
     throw new ApiError(400, "Invalid page number");
   }
 
-  if (isNaN(pageSize) || pageSize < 1) {
+  if (isNaN(pageSIZE) || pageSIZE < 1) {
     throw new ApiError(400, "Invalid limit number");
   }
 
   // Calculate the number of documents to skip for pagination
-  const skip = (pageNumber - 1) * pageSize;
+  const skip = (pageNumber - 1) * pageSIZE;
 
   const comments = await Comment.find({ video: videoId })
     .skip(skip)
-    .limit(pageSize)
-    .select("-owner -video"); 
+    .limit(pageSIZE)
+    .select("-owner -video");
 
-  
   if (!comments.length) {
     return res
       .status(404)
@@ -41,8 +39,14 @@ const getVideoComments = asyncHandler(async (req, res) => {
   }
 
   return res
-  .status(200)
-  .json(new ApiResponse(200, {comments, page: pageNumber, limit: pageSize}, "Comments fetched successfully"))
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { comments, page: pageNumber, limit: pageSIZE },
+        "Comments fetched successfully"
+      )
+    );
 });
 
 const addComment = asyncHandler(async (req, res) => {
@@ -54,23 +58,28 @@ const addComment = asyncHandler(async (req, res) => {
   }
   if (!videoId) {
     throw new ApiError(400, "Video Id is required");
-    
   }
 
   const newComment = await Comment.create({
     content,
-    video: videoId, 
-    owner: req.user._id, 
+    video: videoId,
+    owner: req.user._id,
   });
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {comment: newComment}, "Comment added successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { comment: newComment },
+        "Comment added successfully"
+      )
+    );
 });
 
 const updateComment = asyncHandler(async (req, res) => {
   // TODO: update a comment
-  const {content} = req.body
+  const { content } = req.body;
   const { commentId } = req.param;
 
   if (!commentId) {
@@ -94,7 +103,13 @@ const updateComment = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .json(new ApiResponse(200, {comment: updatedComment}, "Comment updated successfully"));
+    .json(
+      new ApiResponse(
+        200,
+        { comment: updatedComment },
+        "Comment updated successfully"
+      )
+    );
 });
 
 const deleteComment = asyncHandler(async (req, res) => {
